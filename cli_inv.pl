@@ -28,7 +28,7 @@ my $ID2;
 
 # default options
 my $opts = { };
-GetOptions($opts,'h','i=s','u=s','p=s','a=s','m=s','s','n=i','t','l=i','o=s') or pod2usage(2);
+GetOptions($opts,'help|?','ip|address=s','username=s','password=s','action=s','meta=s','ssl','number=i','checkpoint','lastmeta=i','format=s') or pod2usage(2);
 
 =pod
 
@@ -41,17 +41,17 @@ cli_inv.pl - a command line interface to netwitness concentrators
 cli_inv.pl [options] <action data>
 
  Options:
-  -a : action to perform: query, extract, lastmeta\n";
-  -o : output format: tree, summary, csv, normalized. OR when used in extract mode you can specify a directory\n";
-  -m : return values for meta keys (comma seperated list)\n";
-  -u : username (required)\n";
-  -p : password (required)\n";
-  -i : IP address of concentrator/broker (required)\n";
-  -h : this help message\n";
-  -s : use ssl to connect\n";
-  -n : number of results to return (default 10000)\n";
-  -t : keep last processed meta id (usful for scripting), written to .lastmeta\n";
-  -l : last processed meta id (to start query at), useful for scrpting\n\n";
+  --username   username (required)
+  --password   password (required)
+  --address    IP address of concentrator/broker (required)
+  --action     action to perform: query, extract, lastmeta
+  --format     output format: tree, summary, csv, normalized. OR when used in extract mode you can specify a directory
+  --meta       return values for meta keys (comma seperated list)
+  --help       this help message
+  --ssl        use ssl to connect
+  --number     number of results to return (default 10000)
+  --checkpoint keep last processed meta id (usful for scripting), written to .lastmeta
+  --lastmeta   last processed meta id (to start query at), useful for scrpting
 
  Action Data:
   <action data> for extract should be one of the following: exe
@@ -60,10 +60,10 @@ cli_inv.pl [options] <action data>
 
 =head1 EXAMPLES
 
-  cli_inv.pl -m "risk.info,risk.warning,alias.host" -u admin -p netwitness -i 192.168.1.122:50104 -a query -o tree "risk.info exists"
-  cli_inv.pl -m "alias.host" -u admin -p netwitness -i 192.168.1.123:50105 -a query -o summary "service=53"
-  cli_inv.pl -u admin -p netwitness -i 192.168.1.122:50104 -a extract exe
-  cli_inv.pl -u admin -p netwitness -i 192.168.1.122:50104 -a extract -o "/tmp" exe
+  cli_inv.pl --meta "risk.info,risk.warning,alias.host" --username admin --password netwitness --address 192.168.1.122:50104 -action query -format tree "risk.info exists"
+  cli_inv.pl --meta "alias.host" --username admin --password netwitness --address 192.168.1.123:50105 --action query --format summary "service=53"
+  cli_inv.pl --username admin --password netwitness --address 192.168.1.122:50104 -action extract exe
+  cli_inv.pl --username admin --password netwitness --address 192.168.1.122:50104 -action extract --format "/tmp" exe
 
 =cut
 
@@ -237,7 +237,7 @@ sub query
   
   $id2 = getlastsession($ssl,$id1,$id2);
   
-  if ($opts->{t})
+  if ($opts->{checkpoint})
   {
     open(OUT, ">.lastmeta");
     print OUT "$id2";
@@ -421,66 +421,66 @@ sub printnormalized
 ############
 ############
 
-if ($opts->{h}) { pod2usage (1); }
-if (!$opts->{p}) { pod2usage(-verbose=>1,-msg=>"Error: password not specified on command line via -p"); }
-if (!$opts->{u}) { pod2usage(-verbose=>1,-msg=>"Error: username not specified on command line via -u"); }
-if (!$opts->{i}) { pod2usage(-verbose=>1,-msg=>"Error: ip address of concentrator not specified on command line via -i"); }
+if ($opts->{help}) { pod2usage (1); }
+if (!$opts->{password}) { pod2usage(-verbose=>1,-msg=>"Error: password not specified on command line via -p"); }
+if (!$opts->{username}) { pod2usage(-verbose=>1,-msg=>"Error: username not specified on command line via -u"); }
+if (!$opts->{address}) { pod2usage(-verbose=>1,-msg=>"Error: ip address of concentrator not specified on command line via -i"); }
 
-if ($opts->{s}) { $SSL = 1; }
-if ($opts->{n}) { $NUM = $opts->{n}; }
+if ($opts->{ssl}) { $SSL = 1; }
+if ($opts->{number}) { $NUM = $opts->{number}; }
 
-$IPADDRESS = $opts->{i};
-$USERNAME = $opts->{u};
-$PASSWORD = $opts->{p};
+$IPADDRESS = $opts->{address};
+$USERNAME = $opts->{username};
+$PASSWORD = $opts->{password};
 
-if ($opts->{l})
+if ($opts->{lastmeta})
 {
-  $ID1 = $opts->{l} + 1;
+  $ID1 = $opts->{lastmeta} + 1;
 }
 else
 {
   $ID1 = 0;
 }
 
-if ($opts->{a} eq 'query')
+if ($opts->{action} eq 'query')
 {
   my $QUERY = $ARGV[0];
   if ($QUERY eq '') { podusage(-verbose=>1,-msg=>"Error: no query specified on command line"); }
-  my $META = $opts->{m};
+  my $META = $opts->{meta};
   unless ($ID1 > 0)
   {
     ($ID1,$ID2) = summaryinfo($SSL);
   }
   query($ID1,$ID2,$SSL,$NUM,$QUERY,$META);
-  if ($opts->{o} eq 'tree')
+  if ($opts->{format} eq 'tree')
   {
     printtreeresults();
   }
-  elsif ($opts->{o} eq 'summary')
+  elsif ($opts->{format} eq 'summary')
   {
     printsummaryresults();
   }
-  elsif ($opts->{o} eq 'csv')
+  elsif ($opts->{format} eq 'csv')
   {
     printcsv();
   }
-    elsif ($opts->{o} eq 'normalized')
+    elsif ($opts->{format} eq 'normalized')
   {
     printnormalized();
   }
 }
 
 
-if ($opts->{a} eq 'extract')
+if ($opts->{action} eq 'extract')
 {
   unless ($ID1 > 0)
   {
     ($ID1,$ID2) = summaryinfo($SSL);
   }
   print "Extracting Files\n";
-  if ($opts->{o})
+  if ($opts->{format})
   {
-    extractfiles($ID1,$ID2,$SSL,$NUM,$ARGV[0],$opts->{o});
+    extractfiles($ID1,$ID2,$SSL,$NUM,$ARGV[0],$opts->{format});
   }
   else
   {
@@ -488,13 +488,13 @@ if ($opts->{a} eq 'extract')
   }
 }
 
-if ($opts->{a} eq 'lastmeta')
+if ($opts->{action} eq 'lastmeta')
 { 
   my $lastid = getlastsession($SSL,0,0);
   
   print "Setting the last meta id to $lastid, the value is stored in .lastmeta, this is useful for running this script via cron\n";
   
-  if ($opts->{t})
+  if ($opts->{checkpoint})
   {
     open(OUT, ">.lastmeta");
     print OUT "$lastid";
