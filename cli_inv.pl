@@ -9,13 +9,13 @@
 # Last Update: Rui Ataide, fixing file extracting and getting rid of the mime headers like a boss
 #
 
-use Getopt::Std;
+use Getopt::Long qw(:config pass_through);
+use Pod::Usage;
 use LWP::UserAgent;
 use MIME::Parser;
 use strict;
 use warnings;
 
-my %opts;
 my %sessions = ();
 my %metas = ();
 my $IPADDRESS;
@@ -26,36 +26,46 @@ my $NUM = 10000;
 my $ID1;
 my $ID2;
 
-getopts('hi:u:p:a:m:sn:tl:o:', \%opts);
+# default options
+my $opts = { };
+GetOptions($opts,'h','i=s','u=s','p=s','a=s','m=s','s','n=i','t','l=i','o=s') or pod2usage(2);
 
-#
-# prints standard usage for the script
-sub usage
-{
-  print "cli_inv.pl [options] <action data>\n";
-  print "\tOPTIONS\n";
-  print "\t\t-a : action to perform: query, extract, lastmeta\n";
-  print "\t\t-o : output format: tree, summary, csv, normalized. OR when used in extract mode you can specify a directory\n";
-  print "\t\t-m : return values for meta keys (comma seperated list)\n";
-  print "\t\t-u : username (required)\n";
-  print "\t\t-p : password (required)\n";
-  print "\t\t-i : IP address of concentrator/broker (required)\n";
-  print "\t\t-h : this help message\n";
-  print "\t\t-s : use ssl to connect\n";
-  print "\t\t-n : number of results to return (default 10000)\n";
-  print "\t\t-t : keep last processed meta id (usful for scripting), written to .lastmeta\n";
-  print "\t\t-l : last processed meta id (to start query at), useful for scrpting\n\n";
-  print "\tNOTE\n";
-  print "\t\t<action data> for extract should be one of the following: exe\n";
-  print "\t\t<action data> for query should be a \"custom drill\"\n";
-  print "\t\tnormalized output is only useful if you're returning ip.src,ip.dst,time as it will call all meta to be in \"IDS\" alert format\n";
-  print "\tEXAMPLES\n";
-  print "\t\t./cli_inv.pl -m \"risk.info,risk.warning,alias.host\" -u admin -p netwitness -i 192.168.1.122:50104 -a query -o tree \"risk.info exists\"\n";
-  print "\t\t./cli_inv.pl -m \"alias.host\" -u admin -p netwitness -i 192.168.1.123:50105 -a query -o summary \"service=53\"\n";
-  print "\t\t./cli_inv.pl -u admin -p netwitness -i 192.168.1.122:50104 -a extract exe\n";
-  print "\t\t./cli_inv.pl -u admin -p netwitness -i 192.168.1.122:50104 -a extract -o \"/tmp\" exe\n";
-  exit(1);
-}
+=pod
+
+=head1 NAME
+
+cli_inv.pl - a command line interface to netwitness concentrators
+
+=head1 SYNOPSIS
+
+cli_inv.pl [options] <action data>
+
+ Options:
+  -a : action to perform: query, extract, lastmeta\n";
+  -o : output format: tree, summary, csv, normalized. OR when used in extract mode you can specify a directory\n";
+  -m : return values for meta keys (comma seperated list)\n";
+  -u : username (required)\n";
+  -p : password (required)\n";
+  -i : IP address of concentrator/broker (required)\n";
+  -h : this help message\n";
+  -s : use ssl to connect\n";
+  -n : number of results to return (default 10000)\n";
+  -t : keep last processed meta id (usful for scripting), written to .lastmeta\n";
+  -l : last processed meta id (to start query at), useful for scrpting\n\n";
+
+ Action Data:
+  <action data> for extract should be one of the following: exe
+  <action data> for query should be a "custom drill"
+  normalized output is only useful if you're returning ip.src,ip.dst,time as it will call all meta to be in "IDS" alert format
+
+=head1 EXAMPLES
+
+  cli_inv.pl -m "risk.info,risk.warning,alias.host" -u admin -p netwitness -i 192.168.1.122:50104 -a query -o tree "risk.info exists"
+  cli_inv.pl -m "alias.host" -u admin -p netwitness -i 192.168.1.123:50105 -a query -o summary "service=53"
+  cli_inv.pl -u admin -p netwitness -i 192.168.1.122:50104 -a extract exe
+  cli_inv.pl -u admin -p netwitness -i 192.168.1.122:50104 -a extract -o "/tmp" exe
+
+=cut
 
 #
 # Performs a summary info call, gets the first and last meta ids that are in the db
@@ -227,7 +237,7 @@ sub query
   
   $id2 = getlastsession($ssl,$id1,$id2);
   
-  if ($opts{t})
+  if ($opts->{t})
   {
     open(OUT, ">.lastmeta");
     print OUT "$id2";
@@ -411,66 +421,66 @@ sub printnormalized
 ############
 ############
 
-if ($opts{h}) { usage();}
-if (!$opts{p}) { usage(); }
-if (!$opts{u}) { usage(); }
-if (!$opts{i}) { usage(); }
+if ($opts->{h}) { pod2usage (1); }
+if (!$opts->{p}) { pod2usage(-verbose=>1,-msg=>"Error: password not specified on command line via -p"); }
+if (!$opts->{u}) { pod2usage(-verbose=>1,-msg=>"Error: username not specified on command line via -u"); }
+if (!$opts->{i}) { pod2usage(-verbose=>1,-msg=>"Error: ip address of concentrator not specified on command line via -i"); }
 
-if ($opts{s}) { $SSL = 1; }
-if ($opts{n}) { $NUM = $opts{n}; }
+if ($opts->{s}) { $SSL = 1; }
+if ($opts->{n}) { $NUM = $opts->{n}; }
 
-$IPADDRESS = $opts{i};
-$USERNAME = $opts{u};
-$PASSWORD = $opts{p};
+$IPADDRESS = $opts->{i};
+$USERNAME = $opts->{u};
+$PASSWORD = $opts->{p};
 
-if ($opts{l})
+if ($opts->{l})
 {
-  $ID1 = $opts{l} + 1;
+  $ID1 = $opts->{l} + 1;
 }
 else
 {
   $ID1 = 0;
 }
 
-if ($opts{a} eq 'query')
+if ($opts->{a} eq 'query')
 {
   my $QUERY = $ARGV[0];
-  if ($QUERY eq '') { usage(); }
-  my $META = $opts{m};
+  if ($QUERY eq '') { podusage(-verbose=>1,-msg=>"Error: no query specified on command line"); }
+  my $META = $opts->{m};
   unless ($ID1 > 0)
   {
     ($ID1,$ID2) = summaryinfo($SSL);
   }
   query($ID1,$ID2,$SSL,$NUM,$QUERY,$META);
-  if ($opts{o} eq 'tree')
+  if ($opts->{o} eq 'tree')
   {
     printtreeresults();
   }
-  elsif ($opts{o} eq 'summary')
+  elsif ($opts->{o} eq 'summary')
   {
     printsummaryresults();
   }
-  elsif ($opts{o} eq 'csv')
+  elsif ($opts->{o} eq 'csv')
   {
     printcsv();
   }
-    elsif ($opts{o} eq 'normalized')
+    elsif ($opts->{o} eq 'normalized')
   {
     printnormalized();
   }
 }
 
 
-if ($opts{a} eq 'extract')
+if ($opts->{a} eq 'extract')
 {
   unless ($ID1 > 0)
   {
     ($ID1,$ID2) = summaryinfo($SSL);
   }
   print "Extracting Files\n";
-  if ($opts{o})
+  if ($opts->{o})
   {
-    extractfiles($ID1,$ID2,$SSL,$NUM,$ARGV[0],$opts{o});
+    extractfiles($ID1,$ID2,$SSL,$NUM,$ARGV[0],$opts->{o});
   }
   else
   {
@@ -478,13 +488,13 @@ if ($opts{a} eq 'extract')
   }
 }
 
-if ($opts{a} eq 'lastmeta')
+if ($opts->{a} eq 'lastmeta')
 { 
   my $lastid = getlastsession($SSL,0,0);
   
   print "Setting the last meta id to $lastid, the value is stored in .lastmeta, this is useful for running this script via cron\n";
   
-  if ($opts{t})
+  if ($opts->{t})
   {
     open(OUT, ">.lastmeta");
     print OUT "$lastid";
