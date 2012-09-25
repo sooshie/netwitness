@@ -73,7 +73,7 @@ cli_inv.pl [options] <action data>
 # it can also be used to retreive other information in summary about the system.
 sub summaryinfo
 {
-  my $ssl = shift @_;
+  my ($ssl) = @_;
 
   my $ua = LWP::UserAgent->new;
   my $req;
@@ -110,9 +110,7 @@ sub summaryinfo
 # all of it is retreived for accuracy
 sub getlastsession
 {
-  my $ssl = shift @_;
-  my $id1 = shift @_;
-  my $id2 = shift @_;
+  my ($ssl,$id1,$id2) = @_;
 
   my $ua = LWP::UserAgent->new;
   my $req;
@@ -147,12 +145,7 @@ sub getlastsession
 # Extracts files given a file type, adding additional filetypes is pretty trivial
 sub extractfiles
 {
-  my $id1 = shift @_;
-  my $id2 = shift @_;
-  my $ssl = shift @_;
-  my $num = shift @_;
-  my $ft = shift @_;
-  my $output = shift @_;
+  my ($id1,$id2,$ssl,$num,$ft,$output) = @_;
   
   my $req;
   my @filetypes = split(/,/,$ft);
@@ -220,12 +213,7 @@ sub extractfiles
 # performs the actual query for metadata. 
 sub query
 {
-  my $id1 = shift @_;
-  my $id2 = shift @_;
-  my $ssl = shift @_;
-  my $num = shift @_;
-  my $query = shift @_;
-  my $meta = shift @_;
+  my ($id1,$id2,$ssl,$num,$query,$meta) = @_;
   
   my $url;
   my $idmax = 0;
@@ -286,7 +274,7 @@ sub query
 # parses the results and puts the data in several hash data structures
 sub parseresults
 {
-  my $content = shift @_;
+  my ($content) = @_;
   
   my $id1max;
   
