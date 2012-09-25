@@ -18,16 +18,11 @@ use warnings;
 
 my %sessions = ();
 my %metas = ();
-my $IPADDRESS;
-my $USERNAME;
-my $PASSWORD;
-# my $SSL = 0;
-my $NUM = 10000;
 my $ID1;
 my $ID2;
 
 # default options
-my $opts = { };
+my $opts = { number => 10000 };
 GetOptions($opts,'help|?','address|ip=s','username=s','password=s','action=s','meta=s','ssl','number=i','checkpoint','lastmeta=i','format=s') or pod2usage(2);
 
 =pod
@@ -81,11 +76,11 @@ sub summaryinfo
   #print 'http://' . "$USERNAME:$PASSWORD\@$IPADDRESS" . '/sdk?msg=summary&flags=0&force-content-type=text/plain' . "\n";
   if ($ssl)
   {
-    $req = HTTP::Request->new(GET => 'https://' . "$USERNAME:$PASSWORD\@$IPADDRESS" . '/sdk?msg=summary&flags=0&force-content-type=text/plain');
+    $req = HTTP::Request->new(GET => 'https://' . "$opts->{username}:$opts->{password}\@$opts->{address}" . '/sdk?msg=summary&flags=0&force-content-type=text/plain');
   }
   else
   {
-    $req = HTTP::Request->new(GET => 'http://' . "$USERNAME:$PASSWORD\@$IPADDRESS" . '/sdk?msg=summary&flags=0&force-content-type=text/plain');
+    $req = HTTP::Request->new(GET => 'http://' . "$opts->{username}:$opts->{password}\@$opts->{address}" . '/sdk?msg=summary&flags=0&force-content-type=text/plain');
   }
 
   # Pass request to the user agent and get a response back
@@ -118,11 +113,11 @@ sub getlastsession
   #print 'http://' . "$USERNAME:$PASSWORD\@$IPADDRESS" . '/sdk?msg=session&id1=' . "$id1" . '&id2=' . "$id2" . '&force-content-type=text/plain' . "\n";
   if ($ssl)
   {
-    $req = HTTP::Request->new(GET => 'https://' . "$USERNAME:$PASSWORD\@$IPADDRESS" . '/sdk?msg=session&id1=' . "$id1" . '&id2=' . "$id2" . '&force-content-type=text/plain');
+    $req = HTTP::Request->new(GET => 'https://' . "$opts->{username}:$opts->{password}\@$opts->{address}" . '/sdk?msg=session&id1=' . "$id1" . '&id2=' . "$id2" . '&force-content-type=text/plain');
   }
   else
   {
-    $req = HTTP::Request->new(GET => 'http://' . "$USERNAME:$PASSWORD\@$IPADDRESS" . '/sdk?msg=session&id1=' . "$id1" . '&id2=' . "$id2" . '&force-content-type=text/plain');
+    $req = HTTP::Request->new(GET => 'http://' . "$opts->{username}:$opts->{password}\@$opts->{address}" . '/sdk?msg=session&id1=' . "$id1" . '&id2=' . "$id2" . '&force-content-type=text/plain');
   }
 
   # Pass request to the user agent and get a response back
@@ -162,11 +157,11 @@ sub extractfiles
       {
         if ($ssl)
       {
-        $req = HTTP::Request->new(GET => 'https://' . "$USERNAME:$PASSWORD\@$IPADDRESS" . '/sdk/content?session=' . "$session" . '&render=files&includeFileType=".exe"');
+        $req = HTTP::Request->new(GET => 'https://' . "$opts->{username}:$opts->{password}\@$opts->{address}" . '/sdk/content?session=' . "$session" . '&render=files&includeFileType=".exe"');
       }
       else
       {
-        $req = HTTP::Request->new(GET => 'http://' . "$USERNAME:$PASSWORD\@$IPADDRESS" . '/sdk/content?session=' . "$session" . '&render=files&includeFileType=".exe"');
+        $req = HTTP::Request->new(GET => 'http://' . "$opts->{username}:$opts->{password}\@$opts->{address}" . '/sdk/content?session=' . "$session" . '&render=files&includeFileType=".exe"');
       }
       
       # Pass request to the user agent and get a response back
@@ -236,17 +231,17 @@ sub query
   {
     if ($ssl)
     {
-      $url = "https://$USERNAME:$PASSWORD\@$IPADDRESS/sdk?msg=query";
+      $url = "https://$opts->{username}:$opts->{password}\@$opts->{address}/sdk?msg=query";
     }
     else
     {
-      $url = "http://$USERNAME:$PASSWORD\@$IPADDRESS/sdk?msg=query";
+      $url = "http://$opts->{username}:$opts->{password}\@$opts->{address}/sdk?msg=query";
     }
     
     $url .= "&id1=$id1";
     $url .= "&id2=$id2";
     $url .= "&query=select+$meta+where+$query";
-    $url .= "&size=$NUM&force-content-type=text/plain";
+    $url .= "&size=$opts->{number}&force-content-type=text/plain";
     
     #print "$url\n";
     
@@ -414,12 +409,7 @@ if (!$opts->{password}) { pod2usage(-verbose=>1,-msg=>"Error: password not speci
 if (!$opts->{username}) { pod2usage(-verbose=>1,-msg=>"Error: username not specified on command line via --username"); }
 if (!$opts->{address}) { pod2usage(-verbose=>1,-msg=>"Error: ip address of concentrator not specified on command line via --address"); }
 
-# if ($opts->{ssl}) { $SSL = 1; }
-if ($opts->{number}) { $NUM = $opts->{number}; }
-
-$IPADDRESS = $opts->{address};
-$USERNAME = $opts->{username};
-$PASSWORD = $opts->{password};
+if ($opts->{number}) { $opts->{number} = $opts->{number}; }
 
 if ($opts->{lastmeta})
 {
@@ -439,7 +429,7 @@ if ($opts->{action} eq 'query')
   {
     ($ID1,$ID2) = summaryinfo($opts->{ssl});
   }
-  query($ID1,$ID2,$opts->{ssl},$NUM,$QUERY,$META);
+  query($ID1,$ID2,$opts->{ssl},$opts->{number},$QUERY,$META);
   if ($opts->{format} eq 'tree')
   {
     printtreeresults();
@@ -468,11 +458,11 @@ if ($opts->{action} eq 'extract')
   print "Extracting Files\n";
   if ($opts->{format})
   {
-    extractfiles($ID1,$ID2,$opts->{ssl},$NUM,$ARGV[0],$opts->{format});
+    extractfiles($ID1,$ID2,$opts->{ssl},$opts->{number},$ARGV[0],$opts->{format});
   }
   else
   {
-    extractfiles($ID1,$ID2,$opts->{ssl},$NUM,$ARGV[0],"./");
+    extractfiles($ID1,$ID2,$opts->{ssl},$opts->{number},$ARGV[0],"./");
   }
 }
 
