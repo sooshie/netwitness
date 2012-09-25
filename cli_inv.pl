@@ -16,6 +16,7 @@ use MIME::Parser;
 use strict;
 use warnings;
 
+# global variables
 my %sessions = ();
 my %metas = ();
 my $ID1;
@@ -66,33 +67,28 @@ cli_inv.pl [options] <action data>
 # Performs a summary info call, gets the first and last meta ids that are in the db
 # those initial values can be used to scope the initial call to retreive meta data from the db
 # it can also be used to retreive other information in summary about the system.
-sub summaryinfo
-{
+sub summaryinfo {
   my ($ssl) = @_;
 
   my $ua = LWP::UserAgent->new;
   my $req;
 
   #print 'http://' . "$USERNAME:$PASSWORD\@$IPADDRESS" . '/sdk?msg=summary&flags=0&force-content-type=text/plain' . "\n";
-  if ($ssl)
-  {
+  if ($ssl) {
     $req = HTTP::Request->new(GET => 'https://' . "$opts->{username}:$opts->{password}\@$opts->{address}" . '/sdk?msg=summary&flags=0&force-content-type=text/plain');
-  }
-  else
-  {
+  } else {
     $req = HTTP::Request->new(GET => 'http://' . "$opts->{username}:$opts->{password}\@$opts->{address}" . '/sdk?msg=summary&flags=0&force-content-type=text/plain');
   }
 
   # Pass request to the user agent and get a response back
   my $res = $ua->request($req);
 
-  unless ($res->is_success)
-  {
+  unless ($res->is_success) {
     print $res->status_line . "\n";
     print "[*] summary info failed\n";
     exit(1);
   }
-  
+
   $res->content =~ /mid1=(.*?) mid2=(.*?) /;
   #print "$1 $2\n";
   return ($1,$2);
@@ -101,35 +97,30 @@ sub summaryinfo
 #
 # gets the last meta id associated with the last full session in the database
 # this is used to ensure partial session information is not reported, it's also used
-# in the event there is more data requested than is in "size", this will make sure 
+# in the event there is more data requested than is in "size", this will make sure
 # all of it is retreived for accuracy
-sub getlastsession
-{
+sub getlastsession {
   my ($ssl,$id1,$id2) = @_;
 
   my $ua = LWP::UserAgent->new;
   my $req;
 
   #print 'http://' . "$USERNAME:$PASSWORD\@$IPADDRESS" . '/sdk?msg=session&id1=' . "$id1" . '&id2=' . "$id2" . '&force-content-type=text/plain' . "\n";
-  if ($ssl)
-  {
+  if ($ssl) {
     $req = HTTP::Request->new(GET => 'https://' . "$opts->{username}:$opts->{password}\@$opts->{address}" . '/sdk?msg=session&id1=' . "$id1" . '&id2=' . "$id2" . '&force-content-type=text/plain');
-  }
-  else
-  {
+  } else {
     $req = HTTP::Request->new(GET => 'http://' . "$opts->{username}:$opts->{password}\@$opts->{address}" . '/sdk?msg=session&id1=' . "$id1" . '&id2=' . "$id2" . '&force-content-type=text/plain');
   }
 
   # Pass request to the user agent and get a response back
   my $res = $ua->request($req);
 
-  unless ($res->is_success)
-  {
+  unless ($res->is_success) {
     print $res->status_line . "\n";
     print "[*] session info failed\n";
     exit(1);
   }
-  
+
   my $con = $res->content;
   $con =~ /field2:\s(.*?)\s/;
   #print "$1\n";
@@ -138,78 +129,67 @@ sub getlastsession
 
 #
 # Extracts files given a file type, adding additional filetypes is pretty trivial
-sub extractfiles
-{
+sub extractfiles {
   my ($id1,$id2,$ssl,$num,$ft,$output) = @_;
-  
+
   my $req;
   my @filetypes = split(/,/,$ft);
   my $ua = LWP::UserAgent->new;
-  
-  foreach my $type (@filetypes)
-  {
+
+  foreach my $type (@filetypes) {
     $type =~ s/\s+//g;
-    if ($type eq 'exe')
-    {
+    if ($type eq 'exe') {
       # return the session ids for extraction
       query($id1,$id2,$ssl,$num,'filetype=windows executable','sessionid');
-      foreach my $session (keys %sessions)
-      {
-        if ($ssl)
-      {
-        $req = HTTP::Request->new(GET => 'https://' . "$opts->{username}:$opts->{password}\@$opts->{address}" . '/sdk/content?session=' . "$session" . '&render=files&includeFileType=".exe"');
-      }
-      else
-      {
-        $req = HTTP::Request->new(GET => 'http://' . "$opts->{username}:$opts->{password}\@$opts->{address}" . '/sdk/content?session=' . "$session" . '&render=files&includeFileType=".exe"');
-      }
-      
-      # Pass request to the user agent and get a response back
-      my $res = $ua->request($req);
-      
-      unless ($res->is_success)
-      {
-        print $res->status_line . "\n";
-        print "[*] exe extraction failed on session: $session\n";
-        exit(1);
-      }
-      print "Writing $session" . "._exe\n";
-      
-      ### Create a new parser object:
-      my $parser = new MIME::Parser;
-      
-      ### Tell it where to put things:
-      my $directory = "./" . $session;
-      if ($output) {
-        $directory = $output ."/" . $session;
-      }
-      -e $directory or mkdir $directory;
-      $parser->output_dir($directory);
-      
-      ### Change how nameless message-component files are named:
-      $parser->output_prefix("tmp");
-      
-      my $headers = $res->headers;
-      my $mime_container = $headers->as_string . $res->content;
-      
-      ### Parse an input data:
-      $parser->parse_data($mime_container);
-      
-      #open(OUT, ">$output/" .  "$session" . "._xe");
-      #binmode(OUT);
-      #print OUT $res->content;
-      #close(OUT);
+
+      foreach my $session (keys %sessions) {
+        if ($ssl) {
+          $req = HTTP::Request->new(GET => 'https://' . "$opts->{username}:$opts->{password}\@$opts->{address}" . '/sdk/content?session=' . "$session" . '&render=files&includeFileType=".exe"');
+        } else {
+          $req = HTTP::Request->new(GET => 'http://' . "$opts->{username}:$opts->{password}\@$opts->{address}" . '/sdk/content?session=' . "$session" . '&render=files&includeFileType=".exe"');
+        }
+
+	# Pass request to the user agent and get a response back
+	my $res = $ua->request($req);
+
+	unless ($res->is_success) {
+	  print $res->status_line . "\n";
+	  print "[*] exe extraction failed on session: $session\n";
+	  exit(1);
+	}
+        print "Writing $session" . "._exe\n";
+
+	### Create a new parser object:
+	my $parser = new MIME::Parser;
+
+	### Tell it where to put things:
+	my $directory = "./" . $session;
+
+	if ($output) {
+	  $directory = $output ."/" . $session;
+	}
+
+	-e $directory or mkdir $directory;
+	$parser->output_dir($directory);
+
+	### Change how nameless message-component files are named:
+	$parser->output_prefix("tmp");
+
+	my $headers = $res->headers;
+	my $mime_container = $headers->as_string . $res->content;
+
+	### Parse an input data:
+	$parser->parse_data($mime_container);
       }
     }
   }
 }
 
 #
-# performs the actual query for metadata. 
-sub query
-{
+# performs the actual query for metadata.
+sub query {
   my ($id1,$id2,$ssl,$num,$query,$meta) = @_;
-  
+
   my $url;
   my $idmax = 0;
 
@@ -217,135 +197,107 @@ sub query
   $query =~ s/ +/\+/g;
   $query =~ s/\&/%26/g;
   $query =~ s/\|/%7C/g;
-  
+
   $id2 = getlastsession($ssl,$id1,$id2);
-  
-  if ($opts->{checkpoint})
-  {
+
+  if ($opts->{checkpoint}) {
     open(OUT, ">.lastmeta");
     print OUT "$id2";
     close(OUT);
   }
-  
-  while ($idmax <= ($id2 - $num))
-  {
-    if ($ssl)
-    {
+
+  while ($idmax <= ($id2 - $num)) {
+    if ($ssl) {
       $url = "https://$opts->{username}:$opts->{password}\@$opts->{address}/sdk?msg=query";
-    }
-    else
-    {
+    } else {
       $url = "http://$opts->{username}:$opts->{password}\@$opts->{address}/sdk?msg=query";
     }
-    
+
     $url .= "&id1=$id1";
     $url .= "&id2=$id2";
     $url .= "&query=select+$meta+where+$query";
     $url .= "&size=$opts->{number}&force-content-type=text/plain";
-    
+
     #print "$url\n";
-    
+
     my $ua = LWP::UserAgent->new;
     my $req = HTTP::Request->new(GET => "$url");
-    
+
     # Pass request to the user agent and get a response back
     my $res = $ua->request($req);
-    
-    unless ($res->is_success)
-    {
+
+    unless ($res->is_success) {
       print $res->status_line . "\n";
       print "[*] meta query failed\n";
       exit(1);
     }
-    
-    #print $res->content . "\n";
+
     $idmax = parseresults($res->content);
     $id1 = $idmax;
-    #print "$idmax $id2\n";
   }
 }
 
 #
 # parses the results and puts the data in several hash data structures
-sub parseresults
-{
+sub parseresults {
   my ($content) = @_;
-  
+
   my $id1max;
-  
+
   my @results = split(/\n/,$content);
-  foreach my $row (@results)
-  {
+  foreach my $row (@results) {
     $row =~ s/(?:\n|\r)//g;
-    if ($row =~ /^\[/)
-    {
-    ($id1max) = $row =~ /id1=(.*?)\s/;
-    }
-    else
-    {
+    if ($row =~ /^\[/) {
+      ($id1max) = $row =~ /id1=(.*?)\s/;
+    } else {
       my ($value,$type,$group) = $row =~ /value=(.*?)\s+type=(.*?)\s.*?group=(.*)/;
-      if ($value ne '' && $type ne '' && $group ne '')
-      {
-        #print "$value $type $group\n";
+      if ($value ne '' && $type ne '' && $group ne '') {
         $sessions{$group}{$type}{$value} = 1;
         $metas{$type}{$value}{$group} = 1;
       }
-    }	
+    }
   }
   return $id1max;
 }
 
 #
 # prints the data in the hashes in a directory/tree like format
-sub printtreeresults
-{
+sub printtreeresults {
   my $totalsessions = 0;
-  
-  foreach my $session (keys %sessions)
-  {
+
+  foreach my $session (keys %sessions) {
     $totalsessions++;
   }
-  
-  foreach my $m (keys %metas)
-  {
+
+  foreach my $m (keys %metas) {
     print "Key: $m\n";
-    foreach my $v (keys %{$metas{$m}})
-    {
+    foreach my $v (keys %{$metas{$m}}) {
       print "    |---->$v\n";
       my $count = 0;
-      foreach my $g (keys %{$metas{$m}{$v}})
-      {
-        #print "$v $g\n";
+      foreach my $g (keys %{$metas{$m}{$v}}) {
         print "    |     |---->$g\n";
         $count++;
       }
       print "    |\n";
-      #print "$count)\n";
     }
   }
 }
 
 #
 # prints summary information about the data
-sub printsummaryresults
-{
+sub printsummaryresults {
   my $totalsessions = 0;
-  
-  foreach my $session (keys %sessions)
-  {
+
+  foreach my $session (keys %sessions) {
     $totalsessions++;
   }
-  
-  foreach my $m (keys %metas)
-  {
+
+  foreach my $m (keys %metas) {
     print "Key: $m\n";
-    foreach my $v (keys %{$metas{$m}})
-    {
+    foreach my $v (keys %{$metas{$m}}) {
       print "\t$v - (";
       my $count = 0;
-      foreach my $g (keys %{$metas{$m}{$v}})
-      {
-        #print "$v $g\n";
+      foreach my $g (keys %{$metas{$m}{$v}}) {
       	$count++;
       }
       print "$count)\n";
@@ -353,40 +305,27 @@ sub printsummaryresults
   }
 }
 
-sub printcsv
-{
+sub printcsv {
   print "session,meta,value\n";
-  foreach my $session (keys %sessions)
-  {
-    foreach my $meta (keys %{$sessions{$session}})
-    {
-      foreach my $value (keys %{$sessions{$session}{$meta}})
-      {
+  foreach my $session (keys %sessions) {
+    foreach my $meta (keys %{$sessions{$session}}) {
+      foreach my $value (keys %{$sessions{$session}{$meta}}) {
         print "$session,$meta,$value\n";
       }
     }
   }
 }
 
-sub printnormalized
-{
-  foreach my $session (keys %sessions)
-  {
-    foreach my $meta (keys %{$sessions{$session}})
-    {
-      if ($meta ne 'ip.src' && $meta ne 'ip.dst' && $meta ne 'time')
-      {
-        foreach my $value (keys %{$sessions{$session}{$meta}})
-      	{
-      	  foreach my $srcip (%{$sessions{$session}{'ip.src'}})
-      	  {
-      	    foreach my $dstip (%{$sessions{$session}{'ip.dst'}})
-      	    {
-      	      foreach my $timestamp (%{$sessions{$session}{'time'}})
-      	      {
+sub printnormalized {
+  foreach my $session (keys %sessions) {
+    foreach my $meta (keys %{$sessions{$session}}) {
+      if ($meta ne 'ip.src' && $meta ne 'ip.dst' && $meta ne 'time') {
+        foreach my $value (keys %{$sessions{$session}{$meta}}) {
+      	  foreach my $srcip (%{$sessions{$session}{'ip.src'}}) {
+      	    foreach my $dstip (%{$sessions{$session}{'ip.dst'}}) {
+      	      foreach my $timestamp (%{$sessions{$session}{'time'}}) {
       	      	#this is a hack, don't judge me, but fix if if you know a better way
-      	      	if ($srcip != 1 && $dstip != 1 && $timestamp != 1)
-      	      	{
+      	      	if ($srcip != 1 && $dstip != 1 && $timestamp != 1) {
       	          print "$session,$timestamp,$value,$srcip,$dstip\n";
       	      	}
       	      }
@@ -409,71 +348,53 @@ if (!$opts->{password}) { pod2usage(-verbose=>1,-msg=>"Error: password not speci
 if (!$opts->{username}) { pod2usage(-verbose=>1,-msg=>"Error: username not specified on command line via --username"); }
 if (!$opts->{address}) { pod2usage(-verbose=>1,-msg=>"Error: ip address of concentrator not specified on command line via --address"); }
 
-if ($opts->{number}) { $opts->{number} = $opts->{number}; }
-
-if ($opts->{lastmeta})
-{
+if ($opts->{lastmeta}) {
   $ID1 = $opts->{lastmeta} + 1;
-}
-else
-{
+} else {
   $ID1 = 0;
 }
 
-if ($opts->{action} eq 'query')
-{
+if ($opts->{action} eq 'query') {
   my $QUERY = $ARGV[0];
   if ($QUERY eq '') { podusage(-verbose=>1,-msg=>"Error: no query specified on command line"); }
   my $META = $opts->{meta};
-  unless ($ID1 > 0)
-  {
+  unless ($ID1 > 0) {
     ($ID1,$ID2) = summaryinfo($opts->{ssl});
   }
+
   query($ID1,$ID2,$opts->{ssl},$opts->{number},$QUERY,$META);
-  if ($opts->{format} eq 'tree')
-  {
+
+  if ($opts->{format} eq 'tree') {
     printtreeresults();
-  }
-  elsif ($opts->{format} eq 'summary')
-  {
+  } elsif ($opts->{format} eq 'summary') {
     printsummaryresults();
-  }
-  elsif ($opts->{format} eq 'csv')
-  {
+  } elsif ($opts->{format} eq 'csv') {
     printcsv();
-  }
-    elsif ($opts->{format} eq 'normalized')
-  {
+  } elsif ($opts->{format} eq 'normalized') {
     printnormalized();
   }
 }
 
-
-if ($opts->{action} eq 'extract')
-{
-  unless ($ID1 > 0)
-  {
+if ($opts->{action} eq 'extract') {
+  unless ($ID1 > 0) {
     ($ID1,$ID2) = summaryinfo($opts->{ssl});
   }
+
   print "Extracting Files\n";
-  if ($opts->{format})
-  {
+
+  if ($opts->{format}) {
     extractfiles($ID1,$ID2,$opts->{ssl},$opts->{number},$ARGV[0],$opts->{format});
-  }
-  else
-  {
+  } else {
     extractfiles($ID1,$ID2,$opts->{ssl},$opts->{number},$ARGV[0],"./");
   }
 }
 
-if ($opts->{action} eq 'lastmeta')
-{ 
+if ($opts->{action} eq 'lastmeta') {
   my $lastid = getlastsession($opts->{ssl},0,0);
-  
+
   print "Setting the last meta id to $lastid, the value is stored in .lastmeta, this is useful for running this script via cron\n";
-  
-  if ($opts->{checkpoint})
-  {
+
+  if ($opts->{checkpoint}) {
     open(OUT, ">.lastmeta");
     print OUT "$lastid";
     close(OUT);
