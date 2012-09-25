@@ -410,9 +410,9 @@ sub printnormalized
 ############
 
 if ($opts->{help}) { pod2usage (1); }
-if (!$opts->{password}) { pod2usage(-verbose=>1,-msg=>"Error: password not specified on command line via -p"); }
-if (!$opts->{username}) { pod2usage(-verbose=>1,-msg=>"Error: username not specified on command line via -u"); }
-if (!$opts->{address}) { pod2usage(-verbose=>1,-msg=>"Error: ip address of concentrator not specified on command line via -i"); }
+if (!$opts->{password}) { pod2usage(-verbose=>1,-msg=>"Error: password not specified on command line via --password"); }
+if (!$opts->{username}) { pod2usage(-verbose=>1,-msg=>"Error: username not specified on command line via --username"); }
+if (!$opts->{address}) { pod2usage(-verbose=>1,-msg=>"Error: ip address of concentrator not specified on command line via --address"); }
 
 # if ($opts->{ssl}) { $SSL = 1; }
 if ($opts->{number}) { $NUM = $opts->{number}; }
