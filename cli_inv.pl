@@ -28,7 +28,7 @@ my $ID2;
 
 # default options
 my $opts = { };
-GetOptions($opts,'help|?','ip|address=s','username=s','password=s','action=s','meta=s','ssl','number=i','checkpoint','lastmeta=i','format=s') or pod2usage(2);
+GetOptions($opts,'help|?','address|ip=s','username=s','password=s','action=s','meta=s','ssl','number=i','checkpoint','lastmeta=i','format=s') or pod2usage(2);
 
 =pod
 
