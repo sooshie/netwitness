@@ -21,7 +21,7 @@ my %metas = ();
 my $IPADDRESS;
 my $USERNAME;
 my $PASSWORD;
-my $SSL = 0;
+# my $SSL = 0;
 my $NUM = 10000;
 my $ID1;
 my $ID2;
@@ -414,7 +414,7 @@ if (!$opts->{password}) { pod2usage(-verbose=>1,-msg=>"Error: password not speci
 if (!$opts->{username}) { pod2usage(-verbose=>1,-msg=>"Error: username not specified on command line via -u"); }
 if (!$opts->{address}) { pod2usage(-verbose=>1,-msg=>"Error: ip address of concentrator not specified on command line via -i"); }
 
-if ($opts->{ssl}) { $SSL = 1; }
+# if ($opts->{ssl}) { $SSL = 1; }
 if ($opts->{number}) { $NUM = $opts->{number}; }
 
 $IPADDRESS = $opts->{address};
@@ -437,9 +437,9 @@ if ($opts->{action} eq 'query')
   my $META = $opts->{meta};
   unless ($ID1 > 0)
   {
-    ($ID1,$ID2) = summaryinfo($SSL);
+    ($ID1,$ID2) = summaryinfo($opts->{ssl});
   }
-  query($ID1,$ID2,$SSL,$NUM,$QUERY,$META);
+  query($ID1,$ID2,$opts->{ssl},$NUM,$QUERY,$META);
   if ($opts->{format} eq 'tree')
   {
     printtreeresults();
@@ -463,22 +463,22 @@ if ($opts->{action} eq 'extract')
 {
   unless ($ID1 > 0)
   {
-    ($ID1,$ID2) = summaryinfo($SSL);
+    ($ID1,$ID2) = summaryinfo($opts->{ssl});
   }
   print "Extracting Files\n";
   if ($opts->{format})
   {
-    extractfiles($ID1,$ID2,$SSL,$NUM,$ARGV[0],$opts->{format});
+    extractfiles($ID1,$ID2,$opts->{ssl},$NUM,$ARGV[0],$opts->{format});
   }
   else
   {
-    extractfiles($ID1,$ID2,$SSL,$NUM,$ARGV[0],"./");
+    extractfiles($ID1,$ID2,$opts->{ssl},$NUM,$ARGV[0],"./");
   }
 }
 
 if ($opts->{action} eq 'lastmeta')
 { 
-  my $lastid = getlastsession($SSL,0,0);
+  my $lastid = getlastsession($opts->{ssl},0,0);
   
   print "Setting the last meta id to $lastid, the value is stored in .lastmeta, this is useful for running this script via cron\n";
   
